@@ -1,0 +1,652 @@
+-- CREATE DATABASE IF NOT EXISTS
+CREATE DATABASE IF NOT EXISTS Company_DataBase;
+USE Company_DataBase;
+
+-- TO DISABLE SAFE MODE TO MAKE CHANGES IN UPDATE DELETE 
+SET SQL_SAFE_UPDATES = 0;
+
+-- TO ENABLE SAFE MODE TO MAKE CHANGES IN UPDATE DELETE 
+SET SQL_SAFE_UPDATES = 1;
+
+-- TO SEE ALL THE DATABASES
+SHOW DATABASES;
+
+-- TO DELETE THE DATABASES
+DROP DATABASE IF EXISTS Company_DataBase;
+
+
+-- ====================================== TABLE CREATION ====================================
+
+-- >>>>>>>>>>>>>>>>>>   Employee  >>>>>>>>>>>>>>>>>>
+CREATE TABLE Employee(
+    Emp_id INT PRIMARY KEY,
+    First_Name VARCHAR(255) NOT NULL,
+    Last_Name VARCHAR(255) NOT NULL,
+    Join_Date DATE NOT NULL,
+    Birth_Date DATE NOT NULL,
+    Sex VARCHAR(1) NOT NULL,
+    Salary BIGINT NOT NULL,
+    Super_id INT,
+    Branch_id INT
+);
+
+-- >>>>>>>>>>>>>>>>>>  BRANCH   >>>>>>>>>>>>>>>>>>
+CREATE TABLE Branch(
+    Branch_id INT PRIMARY KEY,
+    Branch_Name VARCHAR(255) NOT NULL,
+    Mgr_id INT,
+    Mgr_date_of_join DATE NOT NULL,
+    FOREIGN KEY (Mgr_id) REFERENCES Employee(Emp_id) ON DELETE SET NULL
+);
+
+-- >>>>>>>>>>>>>>>>>>   BRANCH SUPPLIER >>>>>>>>>>>>>>>>>>
+CREATE TABLE Branch_Supplier (
+    Branch_id INT,
+    Supplier_Name VARCHAR(255) NOT NULL,
+    Supplier_Type VARCHAR(255) NOT NULL,
+    PRIMARY KEY (Branch_id, Supplier_Name),
+    FOREIGN KEY (Branch_id) REFERENCES Branch(Branch_id) ON DELETE CASCADE
+);
+
+-- >>>>>>>>>>>>>>>>>>  CLIENTS   >>>>>>>>>>>>>>>>>>
+CREATE TABLE Clients(
+    Client_id INT PRIMARY KEY,
+    Client_Name VARCHAR(255) NOT NULL,
+    Branch_id INT,
+    FOREIGN KEY (Branch_id) REFERENCES Branch(Branch_id) ON DELETE SET NULL
+);
+
+-- >>>>>>>>>>>>>>>>>>  WORKS WITH   >>>>>>>>>>>>>>>>>>
+CREATE TABLE Works_With(
+    Emp_id INT,
+    Client_id INT,
+    Total_Sales BIGINT NOT NULL,
+    PRIMARY KEY (Emp_id, Client_id), 
+    FOREIGN KEY (Emp_id) REFERENCES Employee(Emp_id) ON DELETE CASCADE, 
+    FOREIGN KEY (Client_id) REFERENCES Clients(Client_id) ON DELETE CASCADE
+);
+
+
+-- ======= ALATER TABLE TO ADD NEW COLUMS AND MAKING FOREIGN KEY INTO THE EMPLOYEE =========
+
+--                ============= IMPORTANT CONCEPT OF INDEX ===============
+
+-- The concept of indexing in MySQL is particularly important for foreign keys
+-- because primary keys and unique keys have predefined indexing.
+-- 
+-- STEPS TO CREATE AN INDEX FOR A COLUMN WHEN WORKING WITH FOREIGN KEYS:
+-- 1. Check the reference of the foreign key on the column it targets.
+--    It must be a primary key or a unique key.
+-- 2. If it’s not a primary key or unique key, you must create an index 
+--    on that column if you want to make it a foreign key.
+-- 
+-- EXAMPLE:
+		ALTER TABLE Employee
+		ADD INDEX index_name(Super_id);
+
+-- In the Employee table, Super_id is neither a primary key nor a unique key,
+-- so here I have to create an index for that column.
+-- 
+-- WHY DO WE USE INDEXING IN MYSQL?
+-- -> Makes data retrieval faster.
+-- -> Helps easily recognize key relationships.
+-- 
+-- Now declare the foreign key if desired:
+		ALTER TABLE Employee
+		ADD CONSTRAINT fk_Super FOREIGN KEY (Super_id) REFERENCES Employee(Emp_id);
+
+
+
+-- ============================================== IMPLEMENTATION ==============================================
+
+-- MAKING SUPERVISOR ID FOREIGN KEY IN EMPLOYEE TABLE  REFERENCES EMP_ID FROM THE SAME TABLE 
+ALTER TABLE Employee
+ADD CONSTRAINT fk_Super FOREIGN KEY(Super_id) REFERENCES Employee(Emp_id) ON DELETE SET NULL;
+
+-- MAKING BRANCH ID FOREIGN KEY IN EMPLOYEE TABLE REFERENCES FROM THE BRANCH TABLE
+ALTER TABLE Employee 
+ADD CONSTRAINT fk_Branch FOREIGN KEY(Branch_id) REFERENCES Branch(Branch_id) ON DELETE SET NULL;
+
+
+-- ==================================== DATA INSERTION =====================================
+
+-- INSERTING VALUES INTO THE EMPLOYEE TABLE
+INSERT INTO Employee VALUES
+(100, "Devid", "Monak", "1972-03-12", "1986-01-14", "M", 250000, NULL, NULL),
+(101, "Jan", "Edwin", "1981-05-01", "1997-07-07", "F", 11000, 100, NULL),
+(102, "Charls", "Sap", "1985-06-23", "1998-04-02", "M", 75000, 100, NULL),
+(103, "Micale", "Edler", "1990-09-12", "2002-05-24", "M", 63000, 102, NULL),
+(104, "Kelly", "Andrus", "1991-02-11", "2004-02-09", "F", 55000, 102, NULL),
+(105, "Josh", "Branard", "1993-05-21", "2004-03-01", "F", 69000, 102, NULL),
+(106, "Andi", "Porter", "1996-07-03", "2009-06-01", "M", 78000, 100, NULL),
+(107, "Jim", "Helper", "1999-02-01", "2012-03-03", "M", 65000, 106, NULL),
+(108, "Angela", "Ung", "2003-01-28", "2016-09-12", "F", 71000, 106, NULL);
+
+-- INSERTING VALUES INTO THE BRANCH TABLE
+INSERT INTO Branch VALUES
+(1, "North Branch", 100, "2000-01-15"),
+(2, "South Branch", 102, "2005-02-10"),
+(3, "East Branch", 106, "2010-03-05");
+
+-- LET INSERTING THE BRANCH ID IN EMPLOYEE TABLE BECAUSE HERE EMP_ID IS A FOREIGN KEY AND BRANCH ID IS ALSO AND FOREIGN KEY SO DO LIKE THIS
+UPDATE Employee 
+SET Branch_id = CASE Emp_id
+	WHEN 100 THEN 1
+    WHEN 101 THEN 2
+    WHEN 102 THEN 2
+    WHEN 103 THEN 2
+    WHEN 104 THEN 2
+    WHEN 105 THEN 2
+    WHEN 106 THEN 3
+    WHEN 107 THEN 3
+    WHEN 108 THEN 3
+    ELSE Branch_id
+END;
+
+-- INSERTING VALUES INTO THE BRANCH SUPPLIER TABLE
+INSERT INTO Branch_Supplier VALUES
+(2, "Dhirendra Kumar", "Paper"),
+(2, "Deepanshu Gupta", "Writing Utensils"),
+(3, "Adarsh Kumar", "Paper"),
+(2, "Aditya Kumar", "Custom Forms"),
+(3, "Bhumi Kumari", "Writing Utensils"),
+(3, "Shyam Kumar", "Paper"),
+(3, "Gareema Kumari", "Custom Forms");
+
+-- INSERTING VALUES INTO THE CLIENTS TABLE
+INSERT INTO Clients VALUES
+(400, "John Doe", 1),
+(401, "Jane Smith", 2),
+(402, "Mike Johnson", 2),
+(403, "Emily Davis", 3),
+(404, "David Wilson", 1),
+(405, "Sarah Lewis", 3),
+(406, "Robert Brown", 2);
+
+-- INSERTING VALUES INTO THE WORKS_WITH TABLE
+INSERT INTO Works_With VALUES
+(105, 400, 5500),
+(102, 401, 26700),
+(108, 402, 22500),
+(107, 403, 5000),
+(108, 403, 12000),
+(105, 404, 33000),
+(107, 405, 26000),
+(102, 406, 15000),
+(105, 406, 130000);
+
+
+
+-- ==================================== SEE THE TABLE VALUES =====================================
+SELECT * FROM Employee;
+SELECT * FROM Branch;
+SELECT * FROM Branch_Supplier;
+SELECT * FROM Clients;
+SELECT * FROM Works_With;
+
+-- TO SEE THE NUMBER OF DATABASE AND TABLE CREATED
+SHOW DATABASES;
+SHOW TABLES;
+
+
+
+-- ============================= TRANSACTION FOR THE BACKUP THE TABLE =================================
+
+-- TO START TRANSACTION TO THE BACKUP OF THE DATABASE
+START TRANSACTION;
+
+-- SHORT HAND SYNTAX 
+BEGIN;
+
+-- USE COMMIT IF YOU -> TAKE THE BACKUP TO THE TRANSECITON <- IT IS USUALLY DONE WEN WE SURE ALL THE VALUE IS CORRECT UPLOADED
+COMMIT;
+
+-- IF YOU HAVE DONE ANY WRONG OPEARTION LIKE DELETE THE ROW OR COLUMN OF THE TABLE THEN YOU CAN -> DO ROLLBACK <-
+ROLLBACK;
+
+
+
+-- ====================================== GENERAL QUERIES ======================================
+-- FIND ALL EMPLOYEE ORDER BY SALARY
+SELECT * FROM Employee
+ORDER BY Salary DESC;
+
+-- FIND ALL EMPLOYEE ORDER BY SEX AND THEN NAME
+SELECT * FROM Employee 
+ORDER BY Sex, First_Name, Last_Name;
+
+-- FIND FIRST 5 EMPLOYEE IN THE TABLE
+SELECT * FROM Employee
+LIMIT 5;
+
+-- FIND FIRST AND LAST NAME OF THE EMPLOYEE
+SELECT First_Name, Last_Name FROM Employee; 
+
+-- FIND FORENAME AND SURNAME OF THE EMPLOYEE (HER ALEAS COME INTO THE PICTURE)
+SELECT First_Name AS FORE_NAME, Last_Name AS SUR_NAME FROM Employee;
+
+-- FIND OUT THE ALL DIFFERENT SEX IN THE EMPLOYEE TABLE
+SELECT DISTINCT(Sex) FROM Employee;
+
+-- FIND OUT THE NUMBER OF MALE AND FEMAIL EMPLOYEE IN EMPLOYEE TABLE
+
+-- NIVE APPROCHE
+SELECT 
+	COUNT(Sex) AS NUMBER ,Sex
+FROM Employee
+GROUP BY Sex;
+
+-- FIRST APPROCHE
+SELECT 
+	COUNT(CASE WHEN Sex ="F" THEN 1 END) AS FEMALE,
+    COUNT(CASE WHEN Sex ="M" THEN 1 END) AS MALE
+FROM Employee;
+
+-- SECOND APPROCHE
+SELECT 
+    (SELECT COUNT(*) FROM Employee WHERE Sex = 'M') AS Male_Count,
+    (SELECT COUNT(*) FROM Employee WHERE Sex = 'F') AS Female_Count;
+
+-- THIRD APPROCHE
+SELECT 
+    SUM(CASE WHEN Sex = 'M' THEN 1 ELSE 0 END) AS Male_Count,
+    SUM(CASE WHEN Sex = 'F' THEN 1 ELSE 0 END) AS Female_Count
+FROM 
+    Employee;
+
+-- FIND ALL THE DIFFERENT BRANCH ID
+SELECT DISTINCT( Branch_id ) AS NUMBER_OF_BRANCH FROM Employee;
+
+-- FIND TOTAL SALES OF AN EACH SALSEMAN
+SELECT SUM(Total_Sales) AS TOTAL_SALE, Client_id 
+FROM Works_With
+GROUP BY Client_id;
+
+-- ====================================== AGGREGATE FUNCTION ======================================
+-- Here’s a concise list of commonly used aggregate functions in SQL:
+-- COUNT() - Counts the number of rows.
+-- SUM() - Calculates the total sum of a numeric column.
+-- AVG() - Calculates the average value of a numeric column.
+-- MIN() - Returns the smallest value in a set.
+-- MAX() - Returns the largest value in a set.
+-- GROUP_CONCAT() (MySQL) - Concatenates values from multiple rows into a single string.
+-- VARIANCE() - Calculates the variance of a numeric column.
+-- STDDEV() - Calculates the standard deviation of a numeric column.
+
+-- COUNT
+SELECT COUNT(Emp_id) FROM Employee 
+WHERE Sex = "F" AND Join_Date > "1999-01-01";
+
+-- SUM
+SELECT SUM(Salary) FROM Employee
+WHERE Sex = "M";
+
+-- AVG
+SELECT AVG(Salary) FROM Employee;
+
+-- MAX
+SELECT MAX(Salary) FROM Employee;
+
+-- MIN
+SELECT MIN(Salary) FROM Employee;
+
+-- NOW FIND BOTH MIN SALARY AND MAX SALARY IN THE SALARY COLUMN IN THE EMELOYEE TALBE
+SELECT 
+	MAX(Salary) AS MAXSALARY,
+    MIN(Salary) AS MINSALARY
+FROM Employee;
+    
+-- GROUP_CONCAT
+SELECT 
+	GROUP_CONCAT(First_Name, " ", Last_Name)
+FROM Employee;
+
+-- VARIANCE
+SELECT VARIANCE(Salary) FROM Employee;
+
+-- STDDEV
+SELECT STDDEV(Salary) FROM Employee;
+
+
+-- ====================================== WILDCARD USE OF LIKE ======================================
+-- USE OF WILDCARD
+-- % = ANY OF CHARACTERS,   _ = ONE CHARACTER
+
+-- FIND ANY CLIENT WHO HAVE Lewis IN THERE NAME      ANY CHARACHTER <-%BUT FROM THIS IT MUST BE Lewis
+SELECT * FROM Clients
+WHERE Client_Name LIKE "%Lewis";
+
+-- VARATIN OF SEARCHING METHORD
+SELECT * FROM Clients
+WHERE Client_Name LIKE "% D%";
+
+-- FIND ANY EMPLOYEE WHO DATE_0F_BIRTH IN MARCH THE DATA ARE IN YYYY-MM-DD SO WE PUT 4(Y) ____ AND -TO FIND MARCH(03) IN MM FORMATE % THEN -> ANY
+SELECT * FROM Employee
+WHERE Birth_Date LIKE "____-03%";
+
+
+-- ============================================== UNION =============================================
+-- TO COMBINED TO SEPARATE TABLE INTO ONE TABLE -> it's done on the same datatype and number of columne must be same <-
+-- FIND THE LIST OF EMPLOYEE AND BRANCH NAME
+SELECT First_Name  AS EMPLOYEE_AND_LOCATION, Branch_id FROM Employee
+UNION
+SELECT Branch_Name, Branch_id FROM Branch;
+
+-- IT WILL SO THE NO OF REPEATION OF THE EMPLOY AND BRANCH
+SELECT COUNT(First_Name) AS IN_EMPLOYEE, First_Name  FROM Employee
+GROUP BY First_Name
+UNION
+SELECT COUNT(Branch_Name) AS IN_BRANCH, Branch_Name FROM Branch
+GROUP BY Branch_Name;
+
+
+-- ============================================== JOINS =============================================
+INSERT INTO Branch values(4, "West Branch", NULL, "2004-07-12");
+SELECT * FROM Branch;
+
+-- ->  INNER JOIN  <- SHOR HAND JOIN
+
+-- FIND ALL BRANCHES AND THEIR MANAGER
+SELECT * FROM Employee
+JOIN Branch
+WHERE Mgr_id = Emp_id;
+
+-- MORE DESCRIBE WAY FOR USEFULL INFORMATION  USING ON
+SELECT 
+	Employee.Emp_id, 
+	Employee.First_name,
+	Employee.Last_Name,
+	Employee.Join_Date,
+	Branch.Branch_Name, 
+	Branch.Branch_id 
+FROM Employee
+JOIN Branch
+ON Employee.Emp_id = Branch.Mgr_id;
+
+-- MORE DESCRIBE WAY FOR USEFULL INFORMATION  USING ON
+SELECT 
+	Employee.Emp_id, 
+	Employee.First_name,
+	Employee.Last_Name,
+	Employee.Join_Date,
+	Branch.Branch_Name, 
+	Branch.Branch_id 
+FROM Employee
+INNER JOIN Branch
+ON Employee.Emp_id = Branch.Mgr_id;
+
+-- MORE DESCRIBE WAY FOR USEFULL INFORMATION USING WHERE
+SELECT 
+	Employee.Emp_id, 
+	GROUP_CONCAT(First_name, " ", Last_Name) AS Employee_Name,
+	Employee.Join_Date,
+	Branch.Branch_Name, 
+	Branch.Branch_id 
+FROM Employee
+JOIN Branch
+WHERE Employee.Emp_id = Branch.Mgr_id
+GROUP BY Employee.Emp_id, Employee.Join_Date, Branch.Branch_Name,  Branch.Branch_id;
+
+-- ACHIVE SAME RESULT USING UNION BUT CODE WILL INCREASE AND TABLE WILL NOT ORGANISED LIKE JOIN 
+SELECT 
+	Emp_id,
+    First_Name as Name,
+	Join_Date,
+    NULL AS Branch_Name,
+    NULL AS Branch_id
+FROM Employee
+WHERE Emp_id IN(SELECT Mgr_id FROM Branch)
+UNION
+SELECT 
+	Mgr_id AS Emp_id,
+	NULL AS Name,
+	NULL AS Join_Date,
+	Branch_Name,
+	Branch_id
+FROM Branch 
+WHERE Mgr_id IS NOT NULL;
+ 
+ 
+-- ->  LEFT JOIN  <- SHOR HAND JOIN    
+SELECT 
+	Employee.Emp_id, 
+	GROUP_CONCAT(First_name, " ", Last_Name) AS Employee_Name,
+	Employee.Join_Date,
+	Branch.Branch_Name, 
+	Branch.Branch_id 
+FROM Employee
+LEFT JOIN Branch
+ON Employee.Emp_id = Branch.Mgr_id
+GROUP BY Employee.Emp_id, Employee.Join_Date, Branch.Branch_Name,  Branch.Branch_id;
+
+
+-- ->  RIGHT JOIN  <- SHOR HAND JOIN    
+SELECT 
+	Employee.Emp_id, 
+	GROUP_CONCAT(First_name, " ", Last_Name) AS Employee_Name,
+	Employee.Join_Date,
+	Branch.Branch_Name, 
+	Branch.Branch_id 
+FROM Employee
+RIGHT JOIN Branch
+ON Employee.Emp_id = Branch.Mgr_id
+GROUP BY Employee.Emp_id, Employee.Join_Date, Branch.Branch_Name,  Branch.Branch_id;
+
+-- ->  CROSS JOIN  <- === IMPORANT == NO NEED TO USE -> ON <- KEYWORD   
+SELECT 
+    Employee.Emp_id, 
+    GROUP_CONCAT(Employee.First_Name, " ", Employee.Last_Name) AS Employee_Name,
+    Employee.Join_Date,
+    Branch.Branch_Name, 
+    Branch.Branch_id 
+FROM Employee
+CROSS JOIN Branch
+WHERE Employee.Join_Date > '2002-01-01'  
+GROUP BY Employee.Emp_id, Employee.Join_Date, Branch.Branch_Name, Branch.Branch_id;
+
+
+-- ============================================== NESTED QUERIES =============================================
+
+-- FIND NAME OF ALL THE EMPOLYEE WHO HAVE SOLD OVER 30,000 TO A SINGLE CLIENT
+-- APPLY THE FIRST CONCEPT
+SELECT Count(Total_Sales) FROM Works_With 
+WHERE Total_Sales > 20000;
+
+-- FINDING RESULT USING JOINS WITH DETAILS MULTIPLE RESULT SHOW FOR SAME EMP_ID IF TOTAL_SALES IS > 20000
+SELECT 
+	Employee.Emp_id,
+    GROUP_CONCAT(Employee.First_name, " ", Employee.Last_Name)AS Employee_Name,
+    Employee.Branch_id,
+    Employee.Join_Date,
+    Employee.Sex,
+    Works_With.Total_Sales
+FROM Employee
+JOIN Works_With
+ON Works_With.Emp_id = Employee.Emp_id
+WHERE  Works_With.Total_Sales > 20000
+GROUP BY Employee.Emp_id,Employee.Branch_id, Employee.Join_Date, Employee.Sex, Works_With.Total_Sales;
+
+-- FINDING THE RESULT WITHOUT JOIN BUT IT WILL SHOW ONLY EMP_ID REPETATION NOT ACCURE
+SELECT 
+	Employee.Emp_id,
+    GROUP_CONCAT(Employee.First_Name, " ", Employee.Last_Name)AS Employee_Name,
+    Employee.Branch_id,
+    Employee.Sex,
+    Employee.Join_Date
+FROM Employee
+WHERE Employee.Emp_id IN (SELECT Works_With.Emp_id FROM Works_With WHERE Works_With.Total_Sales > 20000)
+GROUP BY Employee.Emp_id,Employee.Branch_id, Employee.Sex, Employee.Join_Date;
+
+-- FIND ALL CLIENTS WO ARE HANDLED BY BRANCH
+-- THAT CHARLS SAP MANAGER
+-- ASSUMING YOU KNOW CHARLS ID
+
+SELECT 
+	Employee.Emp_id,
+    GROUP_CONCAT(Employee.First_Name, " ",Employee.Last_Name) AS Employee_Name,
+    Employee.Branch_id,
+    Clients.Client_Name
+FROM Employee
+JOIN Clients
+ON Employee.Branch_id = Clients.Branch_id
+WHERE Employee.Emp_id = 102
+GROUP BY Employee.Emp_id, Employee.Branch_id, Clients.Client_Name;
+
+-- SECOND APPROCHE USING SUB QUERY
+SELECT
+	(SELECT Emp_id FROM Employee WHERE Emp_id = 102)AS Employee_id,
+	(SELECT GROUP_CONCAT(First_Name, " ", Last_Name) FROM Employee WHERE Emp_id = 102) AS Employee_Name,
+    (SELECT Branch_id FROM Employee WHERE Emp_id = 102)AS Branch_id,
+    Clients.Client_Name
+FROM Clients
+WHERE Clients.Branch_id = (SELECT Employee.Branch_id FROM Employee WHERE Employee.Emp_id = 102);
+
+
+-- ============================================== ON DELETE =============================================
+-- ON DELETE SET NULL means -> it will set the value to the foreign key on delete of and specific row to null
+-- ON DELETE CASCADE menas -> it will delete all the row in the foreign key where we perform deltetion in row
+-- USE TRANSACTION FOR BACKUP;
+BEGIN;
+START  TRANSACTION;
+
+-- NOW DELETING THE IMPLOYEE HAVING ON DLETE SET NULL
+DELETE FROM Employee
+WHERE Emp_id = 102;
+
+SELECT * FROM Branch;
+SELECT * FROM Employee;
+
+-- NOW DELETING THE BRANCH HAVING ON DELETE CASCADE
+DELETE FROM Branch
+WHERE Branch_id = 2;
+
+SELECT * FROM Branch;
+SELECT * FROM Branch_Supplier;
+
+ROLLBACK;
+
+
+
+-- ============================================== TRIGGERS =============================================
+
+-- IT IS A BLOCK OF SQL CODE USED ON THE DATABASE TABLE IF ANY NEW OPEARION ACCURE ON THE TABLE THEN TRIGGER ACCONOLEDGE THE CHANGES
+-- Triggers are often used for tasks like enforcing data integrity, logging changes, or automatically updating related data.
+
+-- FIRST DEFINE THE TRIGGER TABLE
+CREATE TABLE Table_Trigger(
+    Message VARCHAR(255)
+);
+
+-- NOW APPLY THIS TRIGGER TO THE EMPLOYEE TABLE
+DELIMITER &&
+	CREATE TRIGGER My_Trigger BEFORE INSERT
+	ON Employee
+	FOR EACH ROW BEGIN
+		INSERT INTO Table_Trigger (Message) 
+		VALUES ("One Employee is Added");
+	END &&
+DELIMITER ;
+
+-- NOW INSERT A NEW VALUE IN TO THE EMPLOYEE TABLE
+INSERT INTO Employee values(109, "Barmuda", "Chatarji", "2002-02-010", "2015-01-28", "M", 21000, 100, 3);
+
+-- NOW PRINT THE EMPLOYEE TABLE
+SELECT * FROM Employee;
+
+-- NOW PRINT THE TABLE_TRIGGER
+SELECT * FROM Table_Trigger;
+
+-- YOU CAN ALSO DROP THE TRIGGERS AND TRIGGER TABLE 
+-- TRIGGER TABLE
+DROP TABLE IF EXISTS Table_Trigger;
+
+-- TRIGGER
+DROP TRIGGER IF EXISTS My_Trigger;
+
+
+-- +++++++++++++++++++++++++++++++++++++++ TRIGGER ADVANCE APPLICATION ++++++++++++++++++++++++++++++++++++++++
+
+-- WE CAN ALSO DO MORE ACTIVITY USING TRIGGERS MAINTAINING THE RECORED'S OF THE EMPLOYEE TALBE
+CREATE TABLE Record_Employee_Trigger(
+	Message VARCHAR(255),
+    Used_at DATETIME,
+    SEX VARCHAR(10)
+);
+
+-- DROP TRIGGER TABLE RECORD_EMPLOYEE_TRIGGER
+DROP TABLE IF EXISTS Record_Employee_Trigger;
+
+DELIMITER && 
+	CREATE TRIGGER My_Trigger BEFORE INSERT
+    ON Employee
+    FOR EACH ROW BEGIN
+		INSERT INTO Record_Employee_Trigger (Message, Used_at, Sex)
+        VALUES(CONCAT("New Employee inserted name:- ", NEW.First_Name," ", NEW.Last_Name), NOW(),
+        CASE
+			WHEN NEW.Sex = "F" THEN "Female"
+            WHEN NEW.Sex = "M" THEN "Male"
+            ELSE "OTHER"
+		END);
+	END &&
+DELIMITER ;
+
+-- TO DROP THE TRIGGER FUNCTION 
+DROP TRIGGER IF EXISTS My_Trigger;
+
+-- NOW INSERT NEW VALUE INTO THE EMPLOYEE TRIGGER
+INSERT INTO Employee VALUES (110, "Sunita", "Devi", "2001-06-28", "2017-03-01", "F", 3000, NULL, 1);
+
+-- NOW PRINT EMPLOYEE TABLE
+SELECT * FROM Employee;
+
+-- NOW PRINT RECORD_EMPLOYEE_TRIGGER TABLE
+SELECT * FROM Record_Employee_Trigger;
+
+
+-- THIS ARE THE EXTRA EXMAPLE FOR THE TRIGGER FUNCTION FOR AND SPECIFIC TABLE HERE I AM USING FOR EMPLOYEE TABLE
+
+-- Before_Update_Employee   TO ACCESS THE NEW RECORD THAT YOU WANT TO INSERT INTO THE DATA BASE THEN USE -> NEW <- KEYWORD
+DELIMITER && 
+CREATE TRIGGER Before_Update_Employee BEFORE UPDATE 
+ON Employee
+FOR EACH ROW BEGIN
+    INSERT INTO Record_Employee_Trigger (Message, Used_at, Sex)
+    VALUES (CONCAT("Employee updated: ", NEW.First_Name, " ", NEW.Last_Name), NOW(), NEW.Sex);
+END &&
+DELIMITER ;
+
+-- After_Update_Employee
+DELIMITER && 
+CREATE TRIGGER After_Update_Employee AFTER UPDATE
+ON Employee
+FOR EACH ROW BEGIN
+    INSERT INTO Record_Employee_Trigger (Message, Used_at, Sex)
+    VALUES (CONCAT("Employee with ID ", NEW.Emp_id, " was updated"), NOW(), NEW.Sex);
+END &&
+DELIMITER ;
+
+-- Before_Delete_Employee  TO ACCESS THE AVAILABLE RECORD FORM THE ABLE USE -> OLD <- KEY WORD
+DELIMITER && 
+CREATE TRIGGER Before_Delete_Employee BEFORE DELETE 
+ON Employee
+FOR EACH ROW BEGIN
+    INSERT INTO Record_Employee_Trigger (Message, Used_at, Sex)
+    VALUES (CONCAT("Employee deleted: ", OLD.First_Name, " ", OLD.Last_Name), NOW(), OLD.Sex);
+END &&
+DELIMITER ;
+
+-- After_Delete_Employee
+DELIMITER && 
+CREATE TRIGGER After_Delete_Employee AFTER DELETE 
+ON Employee
+FOR EACH ROW BEGIN
+    INSERT INTO Record_Employee_Trigger (Message, Used_at, Sex)
+    VALUES (CONCAT("Employee with ID ", OLD.Emp_id, " was deleted"), NOW(), OLD.Sex);
+END &&
+DELIMITER ;
+
+
+-- ======================================== NOW BEST OF LUCK FOR YOU ADVANCE LEVEL =============================================
+-- ============================  AND IT IS ENOUGH FOR YOUR PLACEMENT'S INTERVIEW UNDERSTANDING   ===============================
+
+
